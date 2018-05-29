@@ -33,6 +33,11 @@ public:
         target->Set(Nan::New<v8::String>("output").ToLocalChecked(), t->GetFunction());
     }
 
+    NodeMidiOutput(std::string name)
+    {
+        out = new RtMidiOut(RtMidi::UNSPECIFIED, name);
+    }
+
     NodeMidiOutput()
     {
         out = new RtMidiOut();
@@ -51,7 +56,15 @@ public:
             return Nan::ThrowTypeError("Use the new operator to create instances of this object.");
         }
 
-        NodeMidiOutput* output = new NodeMidiOutput();
+        NodeMidiOutput* output;
+        if (info.Length() == 1 && !info[0]->IsString()) {
+            return Nan::ThrowTypeError("First argument must be a string");
+        } else if (info.Length() == 1) {
+            std::string name(*v8::String::Utf8Value(info[0].As<v8::String>()));
+            output = new NodeMidiOutput(name);
+        } else {
+            output = new NodeMidiOutput();
+        }
         output->Wrap(info.This());
 
         info.GetReturnValue().Set(info.This());
@@ -177,6 +190,12 @@ public:
         target->Set(Nan::New<v8::String>("input").ToLocalChecked(), t->GetFunction());
     }
 
+    NodeMidiInput(std::string name)
+    {
+        in = new RtMidiIn(RtMidi::UNSPECIFIED, name);
+        uv_mutex_init(&message_mutex);
+    }
+
     NodeMidiInput()
     {
         in = new RtMidiIn();
@@ -235,7 +254,15 @@ public:
             return Nan::ThrowTypeError("Use the new operator to create instances of this object.");
         }
 
-        NodeMidiInput* input = new NodeMidiInput();
+        NodeMidiInput* input;
+        if (info.Length() == 1 && !info[0]->IsString()) {
+            return Nan::ThrowTypeError("First argument must be a string");
+        } else if (info.Length() == 1) {
+            std::string name(*v8::String::Utf8Value(info[0].As<v8::String>()));
+            input = new NodeMidiInput(name);
+        } else {
+            input = new NodeMidiInput();
+        }
         input->message_async.data = input;
         uv_async_init(uv_default_loop(), &input->message_async, NodeMidiInput::EmitMessage);
         input->Wrap(info.This());
